@@ -17,11 +17,13 @@ export async function GET(request: Request) {
     const surname = searchParams.get("surname");
     const policyNumber = searchParams.get("policyNumber");
     const mobileNumber = searchParams.get("mobileNumber");
+    const customerCode = searchParams.get("customerCode");
 
     const filter: Record<string, string> = {};
     if (surname) filter["phn.surname"] = surname.trim();
     if (policyNumber) filter.pn = policyNumber.trim();
     if (mobileNumber) filter.mob = mobileNumber.trim();
+    if (customerCode) filter.cc = customerCode.trim();
 
     const customers = await Customer.find(filter);
     return Response.json(customers, { status: 200 });

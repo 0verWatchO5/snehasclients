@@ -17,6 +17,9 @@ type Customer = {
   policyTerm: number;
   emi: { status: boolean; amount: number };
   provider: "STAR" | "LIC";
+  dateOfBirth: string;
+  premiumMode: "M" | "Q" | "A";
+  customerCode: string;
   startDate: string;
   endDate: string;
 };
@@ -42,6 +45,9 @@ export default function AddCustomerPage() {
     policyTerm: 20,
     emi: { status: true, amount: 2500 },
     provider: "STAR",
+    dateOfBirth: new Date(1990, 0, 1).toISOString().split("T")[0],
+    premiumMode: "M",
+    customerCode: "",
     startDate: new Date().toISOString().split("T")[0],
     endDate: new Date(new Date().getFullYear() + 1, 0, 1).toISOString().split("T")[0],
   });
@@ -253,6 +259,41 @@ export default function AddCustomerPage() {
               >
                 <option value="STAR">STAR</option>
                 <option value="LIC">LIC</option>
+              </select>
+            </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              Date of Birth (DOB)
+              <input
+                type="date"
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
+                value={form.dateOfBirth}
+                onChange={(e) => setForm((prev) => ({ ...prev, dateOfBirth: e.target.value }))}
+                required
+              />
+            </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              Customer Code
+              <input
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
+                placeholder="Unique customer code"
+                value={form.customerCode}
+                onChange={(e) => setForm((prev) => ({ ...prev, customerCode: e.target.value }))}
+                required
+              />
+            </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              Mode of Premium
+              <select
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
+                value={form.premiumMode}
+                onChange={(e) =>
+                  setForm((prev) => ({ ...prev, premiumMode: e.target.value as "M" | "Q" | "A" }))
+                }
+                required
+              >
+                <option value="M">M (Monthly)</option>
+                <option value="Q">Q (Quarterly)</option>
+                <option value="A">A (Annual)</option>
               </select>
             </label>
             <label className="space-y-1 text-sm font-medium text-slate-700">

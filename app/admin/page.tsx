@@ -5,6 +5,8 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
 
+type PremiumMode = "M" | "Q" | "A";
+
 type Customer = {
   _id?: string;
   policyHolderName: { first: string; mid?: string; surname: string };
@@ -18,9 +20,23 @@ type Customer = {
   policyTerm: number;
   emi: { status: boolean; amount: number };
   provider: "STAR" | "LIC";
+  dateOfBirth: string;
+  customerCode: string;
+  premiumMode: PremiumMode;
   startDate: string;
   endDate: string;
 };
+
+function dateInputValue(value: string | undefined) {
+  return typeof value === "string" && value.length > 0 ? value.split("T")[0] : "";
+}
+
+function premiumModeLabel(mode: string | undefined) {
+  if (mode === "M") return "M (Monthly)";
+  if (mode === "Q") return "Q (Quarterly)";
+  if (mode === "A") return "A (Annual)";
+  return "-";
+}
 
 function AdminPageContent() {
   const router = useRouter();
@@ -33,7 +49,7 @@ function AdminPageContent() {
   });
 
   const [searchValue, setSearchValue] = useState("");
-  const [searchBy, setSearchBy] = useState<"surname" | "policyNumber" | "mobileNumber">("surname");
+  const [searchBy, setSearchBy] = useState<"surname" | "policyNumber" | "mobileNumber" | "customerCode">("surname");
   const [customers, setCustomers] = useState<Customer[]>([]);
   const [info, setInfo] = useState("");
   const [error, setError] = useState("");
@@ -43,25 +59,31 @@ function AdminPageContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
-  // Load all customers on mount and handle auto-search from add-customer
   useEffect(() => {
     const autoSearch = searchParams.get("autoSearch");
-    const searchValue = searchParams.get("searchValue");
+    const nextValue = searchParams.get("searchValue");
 
-    if (autoSearch && searchValue) {
-      // Auto-search after redirect from add-customer
-      setSearchBy(autoSearch as "surname" | "policyNumber" | "mobileNumber");
-      setSearchValue(searchValue);
+    if (autoSearch && nextValue) {
+      setSearchBy(autoSearch as "surname" | "policyNumber" | "mobileNumber" | "customerCode");
+      setSearchValue(nextValue);
       setTimeout(() => {
-        performSearch(searchValue, autoSearch as "surname" | "policyNumber" | "mobileNumber", true);
+        performSearch(
+          nextValue,
+          autoSearch as "surname" | "policyNumber" | "mobileNumber" | "customerCode",
+          true
+        );
       }, 100);
-    } else {
-      // Load all customers on initial mount
-      performSearch("", "surname", false);
+      return;
     }
+
+    performSearch("", "surname", false);
   }, [searchParams]);
 
-  async function performSearch(value: string, filterBy: "surname" | "policyNumber" | "mobileNumber", showMessage: boolean = false) {
+  async function performSearch(
+    value: string,
+    filterBy: "surname" | "policyNumber" | "mobileNumber" | "customerCode",
+    showMessage: boolean
+  ) {
     setError("");
     setInfo("");
     setLoading(true);
@@ -69,11 +91,10 @@ function AdminPageContent() {
     try {
       const params = new URLSearchParams();
       if (value.trim()) {
-        params.set(filterBy, value);
+        params.set(filterBy, value.trim());
       }
 
       const response = await fetch(`/api/search?${params.toString()}`);
-
       const payload = await response.json();
       if (!response.ok) {
         throw new Error(payload.message || "Search failed");
@@ -92,7 +113,6 @@ function AdminPageContent() {
 
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
-
     const trimmed = searchValue.trim();
     if (!trimmed) {
       setError("Enter a value to search.");
@@ -103,7 +123,12 @@ function AdminPageContent() {
   }
 
   function handleEdit(customer: Customer) {
-    setEditingCustomer({ ...customer });
+    setEditingCustomer({
+      ...customer,
+      dateOfBirth: customer.dateOfBirth || "",
+      customerCode: customer.customerCode || "",
+      premiumMode: (customer.premiumMode || "M") as PremiumMode,
+    });
     setShowEditModal(true);
   }
 
@@ -123,7 +148,7 @@ function AdminPageContent() {
         throw new Error(payload.message || "Update failed");
       }
 
-      setCustomers(customers.map((c) => (c._id === editingCustomer._id ? editingCustomer : c)));
+      setCustomers((prev) => prev.map((c) => (c._id === editingCustomer._id ? payload : c)));
       setShowEditModal(false);
       setEditingCustomer(null);
       setInfo("Customer updated successfully.");
@@ -155,7 +180,7 @@ function AdminPageContent() {
         throw new Error(payload.message || "Delete failed");
       }
 
-      setCustomers(customers.filter((c) => c._id !== deletingId));
+      setCustomers((prev) => prev.filter((c) => c._id !== deletingId));
       setShowDeleteConfirm(false);
       setDeletingId(null);
       setInfo("Customer deleted successfully.");
@@ -209,13 +234,14 @@ function AdminPageContent() {
             <select
               value={searchBy}
               onChange={(e) =>
-                setSearchBy(e.target.value as "surname" | "policyNumber" | "mobileNumber")
+                setSearchBy(e.target.value as "surname" | "policyNumber" | "mobileNumber" | "customerCode")
               }
               className="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 outline-none focus:border-cyan-500 focus:bg-white"
             >
               <option value="surname">Filter: Surname</option>
               <option value="policyNumber">Filter: Policy Number</option>
               <option value="mobileNumber">Filter: Mobile Number</option>
+              <option value="customerCode">Filter: Customer Code</option>
             </select>
             <button
               disabled={loading}
@@ -238,14 +264,17 @@ function AdminPageContent() {
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Age</th>
                   <th className="px-3 py-2">Policy #</th>
+                  <th className="px-3 py-2">Customer Code</th>
                   <th className="px-3 py-2">Mobile</th>
                   <th className="px-3 py-2">Weight</th>
                   <th className="px-3 py-2">Height</th>
                   <th className="px-3 py-2">Sum Assured</th>
                   <th className="px-3 py-2">Premium</th>
+                  <th className="px-3 py-2">Premium Mode</th>
                   <th className="px-3 py-2">Term</th>
                   <th className="px-3 py-2">EMI</th>
                   <th className="px-3 py-2">Provider</th>
+                  <th className="px-3 py-2">DOB</th>
                   <th className="px-3 py-2">Start Date</th>
                   <th className="px-3 py-2">End Date</th>
                   <th className="px-3 py-2">Actions</th>
@@ -259,28 +288,31 @@ function AdminPageContent() {
                     </td>
                     <td className="px-3 py-2">{c.age}</td>
                     <td className="px-3 py-2">{c.policyNumber}</td>
+                    <td className="px-3 py-2">{c.customerCode || "-"}</td>
                     <td className="px-3 py-2">{c.mobileNumber}</td>
                     <td className="px-3 py-2">{c.weight}</td>
                     <td className="px-3 py-2">{c.height}</td>
                     <td className="px-3 py-2">{c.sumAssured}</td>
                     <td className="px-3 py-2">{c.premiumAmount}</td>
+                    <td className="px-3 py-2">{premiumModeLabel(c.premiumMode)}</td>
                     <td className="px-3 py-2">{c.policyTerm}</td>
                     <td className="px-3 py-2">{c.emi.status ? `Yes (${c.emi.amount})` : `No (${c.emi.amount})`}</td>
                     <td className="px-3 py-2">{c.provider}</td>
+                    <td className="px-3 py-2">{c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString() : "-"}</td>
                     <td className="px-3 py-2">{new Date(c.startDate).toLocaleDateString()}</td>
                     <td className="px-3 py-2">{new Date(c.endDate).toLocaleDateString()}</td>
                     <td className="px-3 py-2">
                       <div className="flex gap-2">
                         <button
                           onClick={() => handleEdit(c)}
-                          className="rounded px-2 py-1 text-xs font-medium bg-blue-600 text-white hover:bg-blue-700 disabled:opacity-60"
+                          className="rounded bg-blue-600 px-2 py-1 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-60"
                           disabled={loading}
                         >
                           Edit
                         </button>
                         <button
                           onClick={() => handleDeleteClick(c._id || "")}
-                          className="rounded px-2 py-1 text-xs font-medium bg-red-600 text-white hover:bg-red-700 disabled:opacity-60"
+                          className="rounded bg-red-600 px-2 py-1 text-xs font-medium text-white hover:bg-red-700 disabled:opacity-60"
                           disabled={loading}
                         >
                           Delete
@@ -291,7 +323,7 @@ function AdminPageContent() {
                 ))}
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={14} className="px-3 py-6 text-center text-slate-500">
+                    <td colSpan={17} className="px-3 py-6 text-center text-slate-500">
                       No records loaded yet.
                     </td>
                   </tr>
@@ -302,191 +334,51 @@ function AdminPageContent() {
         </section>
       </section>
 
-      {/* Edit Modal */}
       {showEditModal && editingCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-          <div className="max-h-96 w-full max-w-2xl overflow-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
+          <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
             <h2 className="mb-4 text-lg font-semibold">Edit Customer</h2>
             <div className="space-y-3">
               <div className="grid gap-3 md:grid-cols-2">
                 <label className="space-y-1 text-sm font-medium text-slate-700">
                   First Name
                   <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.policyHolderName.first}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          policyHolderName: { ...editingCustomer.policyHolderName, first: e.target.value },
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Middle Name
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.policyHolderName.mid || ""}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          policyHolderName: { ...editingCustomer.policyHolderName, mid: e.target.value },
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Surname
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.policyHolderName.surname}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          policyHolderName: { ...editingCustomer.policyHolderName, surname: e.target.value },
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Policy Number
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.policyNumber}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, policyNumber: e.target.value })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Age
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.age}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, age: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Mobile Number
-                    <input
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.mobileNumber}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, mobileNumber: e.target.value })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Weight (kg)
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.weight}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, weight: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Height (cm)
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.height}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, height: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Sum Assured
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.sumAssured}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, sumAssured: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Premium Amount
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.premiumAmount}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, premiumAmount: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Policy Term (years)
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.policyTerm}
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, policyTerm: Number(e.target.value) })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Provider
-                    <select
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.provider}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          provider: e.target.value as "STAR" | "LIC",
-                        })
-                      }
-                    >
-                      <option value="STAR">STAR</option>
-                      <option value="LIC">LIC</option>
-                    </select>
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    Start Date
-                    <input
-                      type="date"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={
-                          typeof editingCustomer.startDate === "string"
-                            ? editingCustomer.startDate.split("T")[0]
-                            : ""
-                      }
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, startDate: e.target.value })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    End Date
-                    <input
-                      type="date"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={
-                          typeof editingCustomer.endDate === "string"
-                            ? editingCustomer.endDate.split("T")[0]
-                            : ""
-                      }
-                      onChange={(e) => setEditingCustomer({ ...editingCustomer, endDate: e.target.value })}
-                    />
-                  </label>
-                  <label className="space-y-1 text-sm font-medium text-slate-700">
-                    EMI Amount
-                    <input
-                      type="number"
-                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                      value={editingCustomer.emi.amount}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          emi: { ...editingCustomer.emi, amount: Number(e.target.value) },
-                        })
-                      }
-                    />
-                  </label>
-                  <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
-                    <input
-                      type="checkbox"
-                      checked={editingCustomer.emi.status}
-                      onChange={(e) =>
-                        setEditingCustomer({
-                          ...editingCustomer,
-                          emi: { ...editingCustomer.emi, status: e.target.checked },
-                        })
-                      }
-                    />
-                    EMI Status
-                  </label>
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.policyHolderName.first}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        policyHolderName: { ...editingCustomer.policyHolderName, first: e.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Middle Name
+                  <input
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.policyHolderName.mid || ""}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        policyHolderName: { ...editingCustomer.policyHolderName, mid: e.target.value },
+                      })
+                    }
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Surname
+                  <input
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.policyHolderName.surname}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        policyHolderName: { ...editingCustomer.policyHolderName, surname: e.target.value },
+                      })
+                    }
+                  />
+                </label>
                 <label className="space-y-1 text-sm font-medium text-slate-700">
                   Policy Number
                   <input
@@ -496,15 +388,120 @@ function AdminPageContent() {
                   />
                 </label>
                 <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Customer Code
+                  <input
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.customerCode || ""}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, customerCode: e.target.value })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Date of Birth (DOB)
+                  <input
+                    type="date"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={dateInputValue(editingCustomer.dateOfBirth)}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, dateOfBirth: e.target.value })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Age
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.age}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, age: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Mobile Number
+                  <input
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.mobileNumber}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, mobileNumber: e.target.value })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Weight (kg)
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.weight}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, weight: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Height (cm)
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.height}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, height: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Sum Assured
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.sumAssured}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, sumAssured: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Premium Amount
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.premiumAmount}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, premiumAmount: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Premium Mode
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.premiumMode || "M"}
+                    onChange={(e) =>
+                      setEditingCustomer({ ...editingCustomer, premiumMode: e.target.value as PremiumMode })
+                    }
+                  >
+                    <option value="M">M (Monthly)</option>
+                    <option value="Q">Q (Quarterly)</option>
+                    <option value="A">A (Annual)</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Policy Term (years)
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.policyTerm}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, policyTerm: Number(e.target.value) })}
+                  />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Provider
+                  <select
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.provider}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        provider: e.target.value as "STAR" | "LIC",
+                      })
+                    }
+                  >
+                    <option value="STAR">STAR</option>
+                    <option value="LIC">LIC</option>
+                  </select>
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
                   Start Date
                   <input
                     type="date"
                     className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                    value={
-                      typeof editingCustomer.startDate === "string"
-                        ? editingCustomer.startDate.split("T")[0]
-                        : ""
-                    }
+                    value={dateInputValue(editingCustomer.startDate)}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, startDate: e.target.value })}
                   />
                 </label>
@@ -513,13 +510,36 @@ function AdminPageContent() {
                   <input
                     type="date"
                     className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                    value={
-                      typeof editingCustomer.endDate === "string"
-                        ? editingCustomer.endDate.split("T")[0]
-                        : ""
-                    }
+                    value={dateInputValue(editingCustomer.endDate)}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, endDate: e.target.value })}
                   />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  EMI Amount
+                  <input
+                    type="number"
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.emi.amount}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        emi: { ...editingCustomer.emi, amount: Number(e.target.value) },
+                      })
+                    }
+                  />
+                </label>
+                <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
+                  <input
+                    type="checkbox"
+                    checked={editingCustomer.emi.status}
+                    onChange={(e) =>
+                      setEditingCustomer({
+                        ...editingCustomer,
+                        emi: { ...editingCustomer.emi, status: e.target.checked },
+                      })
+                    }
+                  />
+                  EMI Status
                 </label>
               </div>
               <div className="flex gap-3 pt-4">
@@ -543,7 +563,6 @@ function AdminPageContent() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
       {showDeleteConfirm && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">

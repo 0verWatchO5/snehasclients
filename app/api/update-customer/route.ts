@@ -18,7 +18,7 @@ export async function PUT(request: Request) {
       return Response.json({ message: "Customer ID is required" }, { status: 400 });
     }
 
-    const customer = await Customer.findByIdAndUpdate(id, body, { new: true });
+    const customer = await Customer.findByIdAndUpdate(id, body, { new: true, runValidators: true });
 
     if (!customer) {
       return Response.json({ message: "Customer not found" }, { status: 404 });
