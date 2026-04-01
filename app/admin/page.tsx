@@ -1,6 +1,6 @@
 "use client";
 
-import { FormEvent, useEffect, useState } from "react";
+import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter, useSearchParams } from "next/navigation";
@@ -22,7 +22,7 @@ type Customer = {
   endDate: string;
 };
 
-export default function AdminPage() {
+function AdminPageContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { status } = useSession({
@@ -569,5 +569,13 @@ export default function AdminPage() {
         </div>
       )}
     </main>
+  );
+}
+
+export default function AdminPage() {
+  return (
+    <Suspense fallback={<main className="flex min-h-screen items-center justify-center text-slate-600">Loading...</main>}>
+      <AdminPageContent />
+    </Suspense>
   );
 }
