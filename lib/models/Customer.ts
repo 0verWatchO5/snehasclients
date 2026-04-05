@@ -43,7 +43,7 @@ const customerSchema = new mongoose.Schema(
       enum: ["STAR", "LIC"],
     },
     dob: { type: Date, alias: "dateOfBirth", required: true },
-    pm: { type: String, alias: "premiumMode", required: true, enum: ["M", "Q", "A"] },
+    pm: { type: String, alias: "premiumMode", required: true, enum: ["M", "Q", "A", "L"] },
     cc: {
       type: String,
       alias: "customerCode",

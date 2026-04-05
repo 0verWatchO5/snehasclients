@@ -5,7 +5,7 @@ import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
-type PremiumMode = "M" | "Q" | "A";
+type PremiumMode = "M" | "Q" | "A" | "L";
 
 type Customer = {
   _id?: string;
@@ -35,6 +35,7 @@ function premiumModeLabel(mode: string | undefined) {
   if (mode === "M") return "M (Monthly)";
   if (mode === "Q") return "Q (Quarterly)";
   if (mode === "A") return "A (Annual)";
+  if (mode === "L") return "L (LTP)";
   return "-";
 }
 
@@ -452,6 +453,7 @@ function AdminPageContent() {
                     <option value="M">M (Monthly)</option>
                     <option value="Q">Q (Quarterly)</option>
                     <option value="A">A (Annual)</option>
+                    <option value="L">L (LTP)</option>
                   </select>
                 </label>
                 <label className="space-y-1 text-sm font-medium text-slate-700">

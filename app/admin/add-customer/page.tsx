@@ -18,7 +18,7 @@ type Customer = {
   emi: { status: boolean; amount: number };
   provider: "STAR" | "LIC";
   dateOfBirth: string;
-  premiumMode: "M" | "Q" | "A";
+  premiumMode: "M" | "Q" | "A" | "L";
   customerCode: string;
   startDate: string;
   endDate: string;
@@ -286,13 +286,14 @@ export default function AddCustomerPage() {
                 className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
                 value={form.premiumMode}
                 onChange={(e) =>
-                  setForm((prev) => ({ ...prev, premiumMode: e.target.value as "M" | "Q" | "A" }))
+                  setForm((prev) => ({ ...prev, premiumMode: e.target.value as "M" | "Q" | "A" | "L" }))
                 }
                 required
               >
                 <option value="M">M (Monthly)</option>
                 <option value="Q">Q (Quarterly)</option>
                 <option value="A">A (Annual)</option>
+                <option value="L">L (LTP)</option>
               </select>
             </label>
             <label className="space-y-1 text-sm font-medium text-slate-700">
