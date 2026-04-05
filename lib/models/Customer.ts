@@ -32,6 +32,13 @@ const customerSchema = new mongoose.Schema(
       index: true,
       trim: true,
     },
+    pnm: {
+      type: String,
+      alias: "policyNames",
+      required: true,
+      trim: true,
+      maxlength: 150,
+    },
     sa: { type: Number, alias: "sumAssured", required: true, min: 0 },
     pa: { type: Number, alias: "premiumAmount", required: true, min: 0 },
     pt: { type: Number, alias: "policyTerm", required: true, min: 0 },

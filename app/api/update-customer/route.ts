@@ -14,6 +14,7 @@ function normalizeCustomerUpdatePayload(input: Record<string, unknown>) {
   delete body.w;
   delete body.h;
   delete body.pn;
+  delete body.pnm;
   delete body.sa;
   delete body.pa;
   delete body.pt;

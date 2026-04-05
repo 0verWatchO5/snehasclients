@@ -12,6 +12,7 @@ type Customer = {
   weight: number;
   height: number;
   policyNumber: string;
+  policyNames: string;
   sumAssured: number;
   premiumAmount: number;
   policyTerm: number;
@@ -40,6 +41,7 @@ export default function AddCustomerPage() {
     weight: 70,
     height: 170,
     policyNumber: "",
+    policyNames: "",
     sumAssured: 500000,
     premiumAmount: 25000,
     policyTerm: 20,
@@ -164,6 +166,18 @@ export default function AddCustomerPage() {
                 onChange={(e) => setForm((prev) => ({ ...prev, policyNumber: e.target.value }))}
                 required
               />
+            </label>
+            <label className="space-y-1 text-sm font-medium text-slate-700">
+              Policy Names
+              <input
+                className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
+                placeholder="Enter policy names"
+                value={form.policyNames}
+                maxLength={150}
+                onChange={(e) => setForm((prev) => ({ ...prev, policyNames: e.target.value }))}
+                required
+              />
+              <span className="text-xs text-slate-500">Maximum 150 characters.</span>
             </label>
             <label className="space-y-1 text-sm font-medium text-slate-700">
               Age

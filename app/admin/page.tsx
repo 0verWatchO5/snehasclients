@@ -15,6 +15,7 @@ type Customer = {
   weight: number;
   height: number;
   policyNumber: string;
+  policyNames: string;
   sumAssured: number;
   premiumAmount: number;
   policyTerm: number;
@@ -111,6 +112,7 @@ function AdminPageContent() {
       ...customer,
       dateOfBirth: customer.dateOfBirth || "",
       customerCode: customer.customerCode || "",
+      policyNames: customer.policyNames || "",
       premiumMode: (customer.premiumMode || "M") as PremiumMode,
     });
     setShowEditModal(true);
@@ -248,6 +250,7 @@ function AdminPageContent() {
                   <th className="px-3 py-2">Name</th>
                   <th className="px-3 py-2">Age</th>
                   <th className="px-3 py-2">Policy #</th>
+                  <th className="px-3 py-2">Policy Names</th>
                   <th className="px-3 py-2">Customer Code</th>
                   <th className="px-3 py-2">Mobile</th>
                   <th className="px-3 py-2">Weight</th>
@@ -272,6 +275,7 @@ function AdminPageContent() {
                     </td>
                     <td className="px-3 py-2">{c.age}</td>
                     <td className="px-3 py-2">{c.policyNumber}</td>
+                    <td className="px-3 py-2">{c.policyNames || "-"}</td>
                     <td className="px-3 py-2">{c.customerCode || "-"}</td>
                     <td className="px-3 py-2">{c.mobileNumber}</td>
                     <td className="px-3 py-2">{c.weight}</td>
@@ -307,7 +311,7 @@ function AdminPageContent() {
                 ))}
                 {customers.length === 0 ? (
                   <tr>
-                    <td colSpan={17} className="px-3 py-6 text-center text-slate-500">
+                    <td colSpan={18} className="px-3 py-6 text-center text-slate-500">
                       No records loaded yet.
                     </td>
                   </tr>
@@ -370,6 +374,16 @@ function AdminPageContent() {
                     value={editingCustomer.policyNumber}
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, policyNumber: e.target.value })}
                   />
+                </label>
+                <label className="space-y-1 text-sm font-medium text-slate-700">
+                  Policy Names
+                  <input
+                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                    value={editingCustomer.policyNames || ""}
+                    maxLength={150}
+                    onChange={(e) => setEditingCustomer({ ...editingCustomer, policyNames: e.target.value })}
+                  />
+                  <span className="text-xs text-slate-500">Maximum 150 characters.</span>
                 </label>
                 <label className="space-y-1 text-sm font-medium text-slate-700">
                   Customer Code
