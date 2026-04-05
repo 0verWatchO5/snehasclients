@@ -4,6 +4,36 @@ import { authOptions } from "@/lib/auth";
 import connectMongoose from "@/lib/mongoose";
 import Customer from "@/lib/models/Customer";
 
+function normalizeCustomerUpdatePayload(input: Record<string, unknown>) {
+  const body = { ...input };
+
+  // Keep alias-based fields expected by the frontend and drop compact DB keys.
+  delete body.phn;
+  delete body.a;
+  delete body.mob;
+  delete body.w;
+  delete body.h;
+  delete body.pn;
+  delete body.sa;
+  delete body.pa;
+  delete body.pt;
+  delete body.e;
+  delete body.pr;
+  delete body.dob;
+  delete body.pm;
+  delete body.cc;
+  delete body.sd;
+  delete body.ed;
+
+  // Prevent immutable/system fields from being updated accidentally.
+  delete body._id;
+  delete body.id;
+  delete body.createdAt;
+  delete body.updatedAt;
+
+  return body;
+}
+
 export async function PUT(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {
@@ -12,7 +42,8 @@ export async function PUT(request: Request) {
 
   try {
     await connectMongoose();
-    const { id, ...body } = await request.json();
+    const { id, ...rawBody } = await request.json();
+    const body = normalizeCustomerUpdatePayload(rawBody as Record<string, unknown>);
 
     if (!id) {
       return Response.json({ message: "Customer ID is required" }, { status: 400 });
