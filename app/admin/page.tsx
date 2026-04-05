@@ -3,7 +3,7 @@
 import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { useRouter } from "next/navigation";
 
 type PremiumMode = "M" | "Q" | "A";
 
@@ -40,7 +40,6 @@ function premiumModeLabel(mode: string | undefined) {
 
 function AdminPageContent() {
   const router = useRouter();
-  const searchParams = useSearchParams();
   const { status } = useSession({
     required: true,
     onUnauthenticated() {
@@ -60,24 +59,8 @@ function AdminPageContent() {
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
   useEffect(() => {
-    const autoSearch = searchParams.get("autoSearch");
-    const nextValue = searchParams.get("searchValue");
-
-    if (autoSearch && nextValue) {
-      setSearchBy(autoSearch as "surname" | "policyNumber" | "mobileNumber" | "customerCode");
-      setSearchValue(nextValue);
-      setTimeout(() => {
-        performSearch(
-          nextValue,
-          autoSearch as "surname" | "policyNumber" | "mobileNumber" | "customerCode",
-          true
-        );
-      }, 100);
-      return;
-    }
-
     performSearch("", "surname", false);
-  }, [searchParams]);
+  }, []);
 
   async function performSearch(
     value: string,
@@ -544,6 +527,7 @@ function AdminPageContent() {
               </div>
               <div className="flex gap-3 pt-4">
                 <button
+                  type="button"
                   onClick={handleSaveEdit}
                   disabled={loading}
                   className="flex-1 rounded-xl bg-teal-700 px-4 py-2 font-medium text-white hover:bg-teal-800 disabled:opacity-60"
@@ -551,6 +535,7 @@ function AdminPageContent() {
                   {loading ? "Saving..." : "Save"}
                 </button>
                 <button
+                  type="button"
                   onClick={() => setShowEditModal(false)}
                   disabled={loading}
                   className="flex-1 rounded-xl border border-slate-300 px-4 py-2 font-medium text-slate-700 hover:bg-slate-50 disabled:opacity-60"

@@ -79,8 +79,7 @@ export default function AddCustomerPage() {
         throw new Error(payload.message || "Could not add customer");
       }
 
-      // Redirect to dashboard and auto-search for the newly added customer
-      router.push(`/admin?autoSearch=policyNumber&searchValue=${encodeURIComponent(form.policyNumber)}`);
+      router.push(`/admin`);
     } catch (err) {
       setError(err instanceof Error ? err.message : "Could not add customer");
     } finally {
