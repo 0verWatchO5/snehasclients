@@ -316,22 +316,24 @@ export default function AddCustomerPage() {
                 required
               />
             </label>
-            <label className="space-y-1 text-sm font-medium text-slate-700">
-              EMI Amount
-              <input
-                type="number"
-                className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
-                placeholder="EMI amount"
-                value={form.emi.amount}
-                onChange={(e) =>
-                  setForm((prev) => ({
-                    ...prev,
-                    emi: { ...prev.emi, amount: parseNumber(e.target.value) },
-                  }))
-                }
-                required
-              />
-            </label>
+            {form.emi.status ? (
+              <label className="space-y-1 text-sm font-medium text-slate-700">
+                EMI Amount
+                <input
+                  type="number"
+                  className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 font-normal outline-none focus:border-teal-500 focus:bg-white"
+                  placeholder="EMI amount"
+                  value={form.emi.amount}
+                  onChange={(e) =>
+                    setForm((prev) => ({
+                      ...prev,
+                      emi: { ...prev.emi, amount: parseNumber(e.target.value) },
+                    }))
+                  }
+                  required
+                />
+              </label>
+            ) : null}
             <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2.5 text-sm text-slate-700">
               <input
                 type="checkbox"

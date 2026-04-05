@@ -280,7 +280,7 @@ function AdminPageContent() {
                     <td className="px-3 py-2">{c.premiumAmount}</td>
                     <td className="px-3 py-2">{premiumModeLabel(c.premiumMode)}</td>
                     <td className="px-3 py-2">{c.policyTerm}</td>
-                    <td className="px-3 py-2">{c.emi.status ? `Yes (${c.emi.amount})` : `No (${c.emi.amount})`}</td>
+                    <td className="px-3 py-2">{c.emi.status ? `Yes (${c.emi.amount})` : "No"}</td>
                     <td className="px-3 py-2">{c.provider}</td>
                     <td className="px-3 py-2">{c.dateOfBirth ? new Date(c.dateOfBirth).toLocaleDateString() : "-"}</td>
                     <td className="px-3 py-2">{new Date(c.startDate).toLocaleDateString()}</td>
@@ -499,20 +499,22 @@ function AdminPageContent() {
                     onChange={(e) => setEditingCustomer({ ...editingCustomer, endDate: e.target.value })}
                   />
                 </label>
-                <label className="space-y-1 text-sm font-medium text-slate-700">
-                  EMI Amount
-                  <input
-                    type="number"
-                    className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
-                    value={editingCustomer.emi.amount}
-                    onChange={(e) =>
-                      setEditingCustomer({
-                        ...editingCustomer,
-                        emi: { ...editingCustomer.emi, amount: Number(e.target.value) },
-                      })
-                    }
-                  />
-                </label>
+                {editingCustomer.emi.status ? (
+                  <label className="space-y-1 text-sm font-medium text-slate-700">
+                    EMI Amount
+                    <input
+                      type="number"
+                      className="mt-1 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 outline-none focus:border-teal-500 focus:bg-white"
+                      value={editingCustomer.emi.amount}
+                      onChange={(e) =>
+                        setEditingCustomer({
+                          ...editingCustomer,
+                          emi: { ...editingCustomer.emi, amount: Number(e.target.value) },
+                        })
+                      }
+                    />
+                  </label>
+                ) : null}
                 <label className="flex items-center gap-2 rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm font-medium text-slate-700">
                   <input
                     type="checkbox"
