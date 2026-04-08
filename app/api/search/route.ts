@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import connectMongoose from "@/lib/mongoose";
 import Customer from "@/lib/models/Customer";
 
+// Returns customer records filtered by one supported query parameter at a time.
 export async function GET(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {

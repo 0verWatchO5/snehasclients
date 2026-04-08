@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import connectMongoose from "@/lib/mongoose";
 import Customer from "@/lib/models/Customer";
 
+// Removes compact DB keys and immutable/system fields so updates stay safe and alias-driven.
 function normalizeCustomerUpdatePayload(input: Record<string, unknown>) {
   const body = { ...input };
 
@@ -35,6 +36,7 @@ function normalizeCustomerUpdatePayload(input: Record<string, unknown>) {
   return body;
 }
 
+// Updates a customer by id with schema validation and alias translation enabled.
 export async function PUT(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {

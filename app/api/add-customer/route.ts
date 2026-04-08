@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import connectMongoose from "@/lib/mongoose";
 import Customer from "@/lib/models/Customer";
 
+// Creates a customer record after enforcing authenticated admin access.
 export async function POST(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {

@@ -25,10 +25,12 @@ type Customer = {
   endDate: string;
 };
 
+// Add-customer page collects policy-holder data and submits a create request.
 export default function AddCustomerPage() {
   const router = useRouter();
   const { status } = useSession({
     required: true,
+    // Redirect callback blocks unauthenticated access to customer creation.
     onUnauthenticated() {
       router.replace("/");
     },
@@ -58,11 +60,13 @@ export default function AddCustomerPage() {
   const [error, setError] = useState("");
   const [info, setInfo] = useState("");
 
+  // Normalizes numeric input and guards against NaN from partially typed values.
   function parseNumber(value: string) {
     const num = Number(value);
     return Number.isNaN(num) ? 0 : num;
   }
 
+  // Sends the validated form payload to the create API and returns to dashboard on success.
   async function handleAddCustomer(e: FormEvent) {
     e.preventDefault();
     setError("");

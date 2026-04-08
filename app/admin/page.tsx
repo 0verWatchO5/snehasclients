@@ -28,10 +28,12 @@ type Customer = {
   endDate: string;
 };
 
+// Converts ISO date strings to yyyy-mm-dd so date inputs render correctly.
 function dateInputValue(value: string | undefined) {
   return typeof value === "string" && value.length > 0 ? value.split("T")[0] : "";
 }
 
+// Maps compact premium mode codes to readable labels in the table.
 function premiumModeLabel(mode: string | undefined) {
   if (mode === "M") return "M (Monthly)";
   if (mode === "Q") return "Q (Quarterly)";
@@ -40,10 +42,12 @@ function premiumModeLabel(mode: string | undefined) {
   return "-";
 }
 
+// Main admin workspace for searching, editing, and deleting customers.
 function AdminPageContent() {
   const router = useRouter();
   const { status } = useSession({
     required: true,
+    // Unauthenticated callback enforces page-level protection in the client router.
     onUnauthenticated() {
       router.replace("/");
     },
@@ -60,10 +64,12 @@ function AdminPageContent() {
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
 
+  // Initial-load callback preloads customer data so dashboard opens with records.
   useEffect(() => {
     performSearch("", "surname", false);
   }, []);
 
+  // Calls the search API and updates result state for initial load and manual searches.
   async function performSearch(
     value: string,
     filterBy: "surname" | "policyNumber" | "mobileNumber" | "customerCode",
@@ -96,6 +102,7 @@ function AdminPageContent() {
     }
   }
 
+  // Validates the search input before delegating to the shared search routine.
   async function handleSearch(e: FormEvent) {
     e.preventDefault();
     const trimmed = searchValue.trim();
@@ -107,6 +114,7 @@ function AdminPageContent() {
     performSearch(trimmed, searchBy, true);
   }
 
+  // Loads the selected customer into modal state for inline editing.
   function handleEdit(customer: Customer) {
     setEditingCustomer({
       ...customer,
@@ -118,6 +126,7 @@ function AdminPageContent() {
     setShowEditModal(true);
   }
 
+  // Persists customer edits and updates the in-memory row after a successful save.
   async function handleSaveEdit() {
     if (!editingCustomer || !editingCustomer._id) return;
 
@@ -145,11 +154,13 @@ function AdminPageContent() {
     }
   }
 
+  // Opens a confirmation step to avoid accidental destructive deletes.
   function handleDeleteClick(id: string) {
     setDeletingId(id);
     setShowDeleteConfirm(true);
   }
 
+  // Deletes the selected customer and removes it from table state.
   async function handleConfirmDelete() {
     if (!deletingId) return;
 
@@ -595,6 +606,7 @@ function AdminPageContent() {
 }
 
 export default function AdminPage() {
+  // Suspense fallback keeps UX stable while session and client state initialize.
   return (
     <Suspense fallback={<main className="flex min-h-screen items-center justify-center text-slate-600">Loading...</main>}>
       <AdminPageContent />

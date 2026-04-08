@@ -4,6 +4,7 @@ import { FormEvent, useEffect, useState } from "react";
 import { signIn, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
 
+// Home is the authentication entry page and optional dev bootstrap surface.
 export default function Home() {
   const isDev = process.env.NODE_ENV === "development";
   const router = useRouter();
@@ -18,12 +19,14 @@ export default function Home() {
   const [seedMessage, setSeedMessage] = useState("");
   const [seedLoading, setSeedLoading] = useState(false);
 
+  // Redirect callback keeps authenticated users out of the public login page.
   useEffect(() => {
     if (status === "authenticated") {
       router.replace("/admin");
     }
   }, [status, router]);
 
+  // Submits credential login and routes authenticated users to the admin workspace.
   async function onSubmit(e: FormEvent) {
     e.preventDefault();
     setError("");
@@ -44,6 +47,7 @@ export default function Home() {
     setLoading(false);
   }
 
+  // Creates an initial local admin in development using the protected seed endpoint.
   async function onSeedAdmin(e: FormEvent) {
     e.preventDefault();
     setSeedMessage("");

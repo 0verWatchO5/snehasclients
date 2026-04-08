@@ -4,6 +4,7 @@ import { authOptions } from "@/lib/auth";
 import connectMongoose from "@/lib/mongoose";
 import Customer from "@/lib/models/Customer";
 
+// Deletes a customer record by id after verifying authenticated session access.
 export async function DELETE(request: Request) {
   const session = await getServerSession(authOptions);
   if (!session) {

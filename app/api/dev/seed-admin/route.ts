@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import connectMongoose from "@/lib/mongoose";
 import User from "@/lib/models/User";
 
+// Development-only utility to create an initial LOCAL admin user behind a shared secret.
 export async function POST(request: Request) {
   if (process.env.NODE_ENV !== "development") {
     return Response.json({ message: "Not found" }, { status: 404 });

@@ -18,6 +18,7 @@ export const metadata: Metadata = {
   description: "Insurance customer admin dashboard",
 };
 
+// Root layout applies global fonts, styles, and providers for every route.
 export default function RootLayout({
   children,
 }: Readonly<{

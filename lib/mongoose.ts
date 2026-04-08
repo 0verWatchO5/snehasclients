@@ -23,6 +23,7 @@ if (!global.mongooseCache) {
   global.mongooseCache = cached;
 }
 
+// Reuses a singleton Mongoose connection to avoid reconnect storms in dev and API routes.
 export default async function connectMongoose() {
   if (cached.conn) {
     return cached.conn;
