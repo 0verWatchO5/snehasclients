@@ -4,6 +4,8 @@ import Link from "next/link";
 import { FormEvent, useState } from "react";
 import { useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import SecurityHeaderBadge from "@/components/SecurityHeaderBadge";
+
 
 type Customer = {
   policyHolderName: { first: string; mid?: string; surname: string };
@@ -106,12 +108,15 @@ export default function AddCustomerPage() {
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Control Panel</p>
               <h1 className="mt-1 text-2xl font-semibold text-slate-900">Add Customer</h1>
             </div>
-            <Link
-              href="/admin"
-              className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
-            >
-              Back to Dashboard
-            </Link>
+            <div className="flex items-center gap-2">
+              <SecurityHeaderBadge />
+              <Link
+                href="/admin"
+                className="rounded-xl bg-slate-900 px-4 py-2 text-sm font-medium text-white transition hover:bg-slate-700"
+              >
+                Back to Dashboard
+              </Link>
+            </div>
           </div>
         </header>
 

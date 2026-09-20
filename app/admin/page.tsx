@@ -4,6 +4,10 @@ import { FormEvent, Suspense, useEffect, useState } from "react";
 import Link from "next/link";
 import { signOut, useSession } from "next-auth/react";
 import { useRouter } from "next/navigation";
+import SecurityHeaderBadge from "@/components/SecurityHeaderBadge";
+import ScreenPrivacyOverlay from "@/components/ScreenPrivacyOverlay";
+import { useSecurity } from "@/components/SecurityContext";
+
 
 type PremiumMode = "M" | "Q" | "A" | "L";
 
@@ -63,6 +67,21 @@ function AdminPageContent() {
   const [showEditModal, setShowEditModal] = useState(false);
   const [deletingId, setDeletingId] = useState<string | null>(null);
   const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
+
+  const { settings } = useSecurity();
+  const [revealedIds, setRevealedIds] = useState<Record<string, boolean>>({});
+
+  function maskValue(val: string | undefined, id: string | undefined) {
+    if (!val) return "-";
+    const key = (id || "") + val;
+    if (!settings.maskSensitiveData || revealedIds[key] || val.length < 4) return val;
+    return val.slice(0, 2) + "••••" + val.slice(-2);
+  }
+
+  function toggleReveal(id: string | undefined, val: string | undefined) {
+    const key = (id || "") + (val || "");
+    setRevealedIds((prev) => ({ ...prev, [key]: !prev[key] }));
+  }
 
   // Initial-load callback preloads customer data so dashboard opens with records.
   useEffect(() => {
@@ -194,14 +213,16 @@ function AdminPageContent() {
 
   return (
     <main className="min-h-screen p-4 md:p-8">
-      <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
+      <ScreenPrivacyOverlay>
+        <section className="mx-auto flex w-full max-w-6xl flex-col gap-6">
         <header className="rounded-3xl border border-cyan-100 bg-white/95 p-6 shadow-lg shadow-cyan-900/10">
           <div className="flex flex-wrap items-center justify-between gap-4">
             <div>
               <p className="text-xs font-semibold uppercase tracking-[0.22em] text-cyan-700">Control Panel</p>
-              <h1 className="mt-1 text-2xl font-semibold text-slate-900">Insurance Admin DB</h1>
+              <h1 className="mt-1 text-2xl font-semibold text-slate-900">Sneha Medicare Client Database</h1>
             </div>
-            <div className="flex items-center gap-2">
+            <div className="flex flex-wrap items-center gap-2">
+              <SecurityHeaderBadge />
               <Link
                 href="/admin/add-customer"
                 className="rounded-xl bg-teal-700 px-4 py-2 text-sm font-medium text-white transition hover:bg-teal-800"
@@ -287,8 +308,42 @@ function AdminPageContent() {
                     <td className="px-3 py-2">{c.age}</td>
                     <td className="px-3 py-2">{c.policyNumber}</td>
                     <td className="px-3 py-2">{c.policyNames || "-"}</td>
-                    <td className="px-3 py-2">{c.customerCode || "-"}</td>
-                    <td className="px-3 py-2">{c.mobileNumber}</td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center gap-1.5 font-mono">
+                        {maskValue(c.customerCode, c._id)}
+                        {c.customerCode && settings.maskSensitiveData && (
+                          <button
+                            type="button"
+                            onClick={() => toggleReveal(c._id, c.customerCode)}
+                            title="Toggle reveal"
+                            className="text-slate-400 hover:text-slate-700"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
+                    </td>
+                    <td className="px-3 py-2">
+                      <span className="inline-flex items-center gap-1.5 font-mono">
+                        {maskValue(c.mobileNumber, c._id)}
+                        {c.mobileNumber && settings.maskSensitiveData && (
+                          <button
+                            type="button"
+                            onClick={() => toggleReveal(c._id, c.mobileNumber)}
+                            title="Toggle reveal"
+                            className="text-slate-400 hover:text-slate-700"
+                          >
+                            <svg className="h-3.5 w-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" />
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" />
+                            </svg>
+                          </button>
+                        )}
+                      </span>
+                    </td>
                     <td className="px-3 py-2">{c.weight}</td>
                     <td className="px-3 py-2">{c.height}</td>
                     <td className="px-3 py-2">{c.sumAssured}</td>
@@ -331,8 +386,10 @@ function AdminPageContent() {
             </table>
           </div>
         </section>
-      </section>
+        </section>
+      </ScreenPrivacyOverlay>
 
+      {/* Edit Modal */}
       {showEditModal && editingCustomer && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
           <div className="max-h-[85vh] w-full max-w-3xl overflow-auto rounded-3xl border border-slate-200 bg-white p-6 shadow-xl">
